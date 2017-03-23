@@ -16,6 +16,7 @@ import {ValueFormatterService} from "../valueFormatterService";
 import {CheckboxSelectionComponent} from "../checkboxSelectionComponent";
 import {ColumnController} from "../../columnController/columnController";
 import {Column} from "../../entities/column";
+import { IFrameworkFactory } from "../../interfaces/iFrameworkFactory";
 
 var svgFactory = SvgFactory.getInstance();
 
@@ -37,6 +38,7 @@ export class GroupCellRenderer extends Component implements ICellRenderer {
     @Autowired('valueFormatterService') private valueFormatterService: ValueFormatterService;
     @Autowired('context') private context: Context;
     @Autowired('columnController') private columnController: ColumnController;
+    @Autowired('frameworkFactory') private frameworkFactory: IFrameworkFactory;
 
     private eExpanded: HTMLElement;
     private eContracted: HTMLElement;
@@ -198,7 +200,21 @@ export class GroupCellRenderer extends Component implements ICellRenderer {
             if (colDefOfGroupedCol.cellRendererParams) {
                 _.assign(params, colDefOfGroupedCol.cellRendererParams);
             }
-            this.cellRendererService.useCellRenderer(colDefOfGroupedCol.cellRenderer, this.eValue, params);
+            this.cellRendererService.useCellRenderer(colDefOfGroupedCol.cellRenderer, this.eValue, params);            
+        } else
+        if (colDefOfGroupedCol && colDefOfGroupedCol.cellRendererFramework)
+        {
+            let frameworkCellRenderer = this.frameworkFactory.colDefCellRenderer(colDefOfGroupedCol);
+             // reuse the params but change the value
+            params.value = groupName;
+            params.valueFormatted = valueFormatted;
+
+            // because we are talking about the different column to the original, any user provided params
+            // are for the wrong column, so need to copy them in again.
+            if (colDefOfGroupedCol.cellRendererParams) {
+                _.assign(params, colDefOfGroupedCol.cellRendererParams);
+            }
+            this.cellRendererService.useCellRenderer(frameworkCellRenderer, this.eValue, params);
         } else {
             var valueToRender = _.exists(valueFormatted) ? valueFormatted : groupName;
             if (_.exists(valueToRender) && valueToRender !== '') {
